@@ -1,0 +1,149 @@
+## BugSage — Gerador Assistido de Testes Unitários (via Gemini)
+Descrição do agente e do problema resolvido
+
+O que é: O BugSage é um agente (Streamlit + Gemini) focado apenas em testes unitários.
+Problema que resolve: Desenvolvedores frequentemente deixam testes por último, criam poucos cenários e têm dificuldade em padronizar mocks/stubs. O BugSage automatiza a geração de skeletons de testes, sugere casos positivos/negativos, indica mocks/stubs e orienta como executar a suíte.
+
+Como o usuário interage (MVP focado em testes):
+
+Seleciona a linguagem/framework de testes (ex.: python/pytest, go/testing, csharp/xUnit, java/junit5, javascript/jest).
+
+Cola o código-fonte alvo.
+
+Recebe:
+
+Casos de teste propostos (estruturados e comentados);
+
+Mocks/stubs recomendados;
+
+Comando para executar a suíte (ex.: pytest -q, go test, dotnet test, mvn test, npm test).
+
+Escopo desta versão: apenas testes unitários (não cobre integração ou testes end-to-end).
+
+
+## Instalação e execução (local)
+
+Requisitos
+
+Python 3.11+
+
+Chave da API do Gemini (defina como GOOGLE_API_KEY)
+
+Passo a passo
+- 1 Instalar dependências
+    pip install -U -r requirements.txt
+
+- 2 Configurar chave do Gemini em .env (na raiz do projeto)
+    Crie/edite o arquivo .env com a linha: GOOGLE_API_KEY=SUACHAVEAQUI
+
+- 3 Executar a interface
+
+        streamlit run main.py
+
+
+Acesse no navegador: geralmente http://localhost:8501.
+
+Uso na interface
+
+Vá na aba “Geração de Testes”.
+
+Escolha o alvo (ex.: python/pytest).
+
+Cole o código que será testado.
+
+Clique em “Gerar testes”.
+
+Copie os arquivos sugeridos para sua base de testes e rode o comando indicado.
+
+## Terraform
+
+Pasta: terraform/
+
+Objetivo: prover uma infraestrutura simples para demonstração do agente em nuvem:
+
+S3: bucket para artefatos (se necessário).
+
+EC2: instância que sobe o agente containerizado (Streamlit).
+
+Security Group: portas 22 (SSH) e 8501 (Streamlit) abertas para demo.
+
+Arquivos principais
+
+    provider.tf provedor AWS.
+
+
+    main.tf: recursos (S3, Security Group e EC2 com user_data que instala Docker e roda o container).
+
+    variables.tf: insumos obrigatórios (VPC/Subnet/AMI/KeyPair) e GOOGLE_API_KEY.
+
+    outputs.tf: exibe URL pública do Streamlit e nome do bucket.
+
+    README.md: instruções de uso.
+
+## Como rodar os testes do projeto
+
+O repositório inclui testes simples (pytest) para funções puras que suportam o agente (ex.: normalização de modelo, bounds de temperatura, validação básica de chave e formatação do prompt).
+
+pip install -U -r requirements.txt
+pytest -q
+
+## CI/CD — Como funciona o pipeline (GitHub Actions)
+O pipeline faz:
+
+Checkout do repositório;
+
+Instala dependências (requirements.txt) e pytest;
+
+Roda os testes: pytest -q;
+
+Smoke test do Streamlit:
+
+Sobe streamlit run main.py em modo headless;
+
+Faz health-check com curl em http://127.0.0.1:8501/.
+
+Segredos e variáveis:
+
+Por padrão, o smoke test não usa Gemini (apenas verifica se a UI responde).
+
+Para chamadas reais, adicione GOOGLE_API_KEY como secret no repositório e exporte no job.
+
+Possíveis evoluções do pipeline:
+
+Job opcional de build & push de imagem Docker para GHCR/ECR;
+
+Job de deploy que aplica Terraform em ambiente de demo;
+
+Relatórios de cobertura de testes (ex.: pytest-cov).
+
+## GitHub Codespaces — Simulando o ambiente
+
+Pasta: .devcontainer/
+Arquivo: devcontainer.json
+
+O que oferece:
+
+Container de desenvolvimento com Python 3.11;
+
+postCreateCommand instala as dependências;
+
+Porta 8501 mapeada para acessar o Streamlit pelo browser do Codespaces;
+
+Extensões úteis (Python, Docker, Actions).
+
+Como usar:
+
+Abra o repositório no GitHub e clique em Code → Codespaces → Create codespace on main.
+
+Aguarde a configuração (as dependências serão instaladas automaticamente).
+
+No terminal do Codespaces:
+
+# Opcional: exporte a chave como secret do Codespaces ou defina localmente
+export GOOGLE_API_KEY=SUACHAVEAQUI
+streamlit run main.py
+
+
+Abra a porta 8501 quando o Codespaces solicitar (ou via “Ports” → “Open in Browser”).
+
+Dica: você pode definir GOOGLE_API_KEY como Secret de Codespaces no GitHub (Settings → Codespaces → Secrets) para não expor a chave no .env.
